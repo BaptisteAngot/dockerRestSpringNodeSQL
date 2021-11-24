@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  mysql-development:
+    image: mysql:8.0.17
+    environment:
+      MYSQL_ROOT_PASSWORD: helloworld
+      MYSQL_DATABASE: testapp
+    ports:
+      - "3308:3306"
+    networks:
+      - spring-cloud-network
+  app:
+    container_name: message-server
+    build:
+      context: ./demo/
+      dockerfile: Dockerfile
+    image: message-server:latest
+    ports:
+      - "7000:8080"
+    depends_on:
+      - mysql-development
+    environment:
+      spring.datasource.url: jdbc:mysql://mysql-development:3306/testapp
+    networks:
+      - spring-cloud-network
+  inventory:
+    image: node
+    ports:
+      - "2500:2500"
+    working_dir: /usr/app
+    command: sh -c "npm install && npm start"
+    volumes:
+      - ./inventory/app/:/usr/app/
+    depends_on:
+      - mysql-development
+    networks:
+      - spring-cloud-network
+  gateway:
+    image: node
+    ports:
+      - "6900:6900"
+    working_dir: /usr/app
+    command: sh -c "npm install && npm start"
+    volumes:
+      - ./gateway/app/:/usr/app/
+    depends_on:
+      - mysql-development
+    networks:
+      - spring-cloud-network
+volumes:
+  books-data:
+networks:
+  spring-cloud-network:
+    driver: bridge
